@@ -1,25 +1,30 @@
 /*
  * 
- * v2
+ * v2:
  * smart home system
  * - Removed the delay(2000) and used time diff delay.
  * 
  * 
- * v3
+ * v3:
  * - fixed payload length
  * - properly calibrate energy reading...
  * - concatenate the energy reading into a 2 dp char array...
  * 
+ * v3.1:
+ * - Update 
+ *
  * 
 */
 
 #include <SoftwareSerial.h>
 
-#define SAMPLES 100
-#define ACS_Pin A0
-#define BLUE 4
-#define lon     digitalWrite(BLUE, HIGH)
-#define loff    digitalWrite(BLUE, LOW)
+#define SAMPLES   100
+#define ACS_Pin   A0
+#define BLUE      4
+#define lon       digitalWrite(BLUE, HIGH)
+#define loff      digitalWrite(BLUE, LOW)
+#define l_blink   lon; delay(700); loff; delay(300);
+#define led_set   l_blink; l_blink; l_blink;
 
 SoftwareSerial Fieneryc(8,9);
 
@@ -30,12 +35,13 @@ char enUnit = 'u'; // k = kWh | u = Wh
 
 char charCurrEnergy[7] = {' ',' ',' ',' ',' ',' ',' '};
 
-String stringSRead = "";
-String stringFRead = "";
-String THIS_DEV_ADDR    = "AT+ADDRESS=8\r\n";
-String OTHER_DEV_ADDR   = "AT+ADDRESS=13\r\n"; 
-String PARAMETER        = "AT+PARAMETER=7,3,4,5\r\n";
+String stringSRead      = "";
+String stringFRead      = "";
 String sendCommand      = "";
+String THIS_SNDR_ADDR   = "AT+ADDRESS=11731\r\n";
+String OTHER_RCVR_ADDR  = "AT+ADDRESS=11317\r\n";    
+String PARAMETER        = "AT+PARAMETER=7,9,3,13\r\n";
+const String sendAddr   = "AT+SEND=11317,20,";
 
 int isSRead = 0, isFRead = 0;
 byte isS1=0, isS2=0, isL=0, S1 = 6, S2 = 7, L = 5, isBlink = 0;
@@ -71,19 +77,30 @@ void switchAll(){
 
 void setup() {
   Serial.begin(9600);
-  Serial.println("Fieneryc");
-  
+  delay(1);  
   Fieneryc.begin(9600);
+  delay(1);
+
   randomSeed(analogRead(0));
 
   //Setup comm
   while(!Fieneryc);
   Fieneryc.print("AT\r\n");
-  delay(1);
-  Fieneryc.print(OTHER_DEV_ADDR);
-  delay(1);
-  Fieneryc.print("AT+PARAMETER=7,3,4,5\r\n");
-  delay(1);
+  delay(10);
+  Fieneryc.print("ATZ\r\n");
+  delay(10);
+  Fieneryc.print("AT+OPMODE=1\r\n"); //For RYLR993 you need to set it to 1 to use the RYLR998 syntax, with a default NETWORKID=18
+  delay(10);
+  Fieneryc.print("AT+BAND=915000000\r\n");
+  delay(10);
+  Fieneryc.print("AT+NETWORKID=18");
+  delay(10);
+  Fieneryc.print(PARAMETER);
+  delay(10);
+  Fieneryc.print(THIS_SNDR_ADDR); // Set the device address for this receiver: 11317.
+  delay(10);
+  Fieneryc.print("AT+CPIN=F7C3901E\r\n");
+  delay(10);
 
   randEnergy = random(176);
 
@@ -95,6 +112,7 @@ void setup() {
   switchAll();
 
   pinMode(ACS_Pin, INPUT);  //current reader...
+  led_set;
 }
 
 void readSerial(){
@@ -239,7 +257,7 @@ void loop() {
   
   if (millis() - sendTime >= 10000){
     //send the energy reading...
-    sendCommand  = "AT+SEND=13,15,";
+    sendCommand  = sendAddr;
     sendCommand += charCurrEnergy; sendCommand += ","; sendCommand += enUnit; 
     sendCommand += ","; sendCommand += isS1; //S1 switch state...
     sendCommand += ","; sendCommand += isS2; //S2 switch state...
