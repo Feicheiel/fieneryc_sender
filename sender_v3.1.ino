@@ -224,21 +224,21 @@ void loop() {
     //}
 
     if (stringFRead.length() > 5){
-       switch(stringFRead[9]){
+       switch(stringFRead[14]){
           case 'A': 
-                    if(stringFRead[10] == '1') isS1 = 1;
+                    if(stringFRead[15] == '1') isS1 = 1;
                     else isS1 = 0;
                     switchState(S1, isS1);
                     break;
                     
           case 'B': 
-                    if(stringFRead[10] == '1') isS2 = 1;
+                    if(stringFRead[15] == '1') isS2 = 1;
                     else isS1 = 0;
                     switchState(S2, isS2);
                     break;
                     
           case 'L': 
-                    if(stringFRead[10] == '1') isL = 1;
+                    if(stringFRead[15] == '1') isL = 1;
                     else isL = 0;
                     switchState(L, isL);
                     break;
